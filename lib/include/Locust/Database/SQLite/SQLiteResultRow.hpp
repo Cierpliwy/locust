@@ -29,6 +29,7 @@ class SQLiteResultRow : public ResultRow {
 public:
     friend class SQLiteDatabase;
 
+    virtual ~SQLiteResultRow();
     virtual const Values& values() const;
     virtual const Value& operator[](unsigned int i) const;
     virtual bool next();
@@ -37,6 +38,7 @@ public:
 protected:
     SQLiteResultRow();
     SQLiteResultRow(sqlite3_stmt *statement);
+    void cleanup();
 
     sqlite3_stmt *_statement;
     Values _rowValues;

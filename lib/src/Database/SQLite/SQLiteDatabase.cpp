@@ -39,7 +39,10 @@ void SQLiteDatabase::initialize(const std::string &databaseFileName) {
         throw DatabaseReinitializeException(THIS_LOCATION);
     }
 
-    int code = sqlite3_open(databaseFileName.c_str(), &_db);
+    int code = sqlite3_open_v2(databaseFileName.c_str(), &_db, SQLITE_OPEN_READWRITE |
+                                                               SQLITE_OPEN_CREATE |
+                                                               SQLITE_OPEN_FULLMUTEX |
+                                                               SQLITE_OPEN_SHAREDCACHE, nullptr);
     if (code != SQLITE_OK) {
         auto reason = sqlite3_errmsg(_db);
         close();
@@ -68,14 +71,16 @@ shared_ptr<ResultRow> SQLiteDatabase::executeStatement(const std::string &statem
 }
 
 // PRIVATE INTERFACE --------------------------------------------------------------------------------------------------
-
 sqlite3_stmt *SQLiteDatabase::findOrCreateStatement(const std::string &statement) {
     sqlite3_stmt *sqliteStatement = nullptr;
     auto preparedStatement = _preparedStatements.find(statement);
     if (preparedStatement == _preparedStatements.end()) {
-        int result = sqlite3_prepare_v2(_db, statement.c_str(),
+        int result = SQLITE_BUSY;
+        while (result == SQLITE_BUSY || result == SQLITE_LOCKED) {
+            result = sqlite3_prepare_v2(_db, statement.c_str(),
                                         static_cast<int>(statement.length() + 1),
                                         &sqliteStatement, nullptr);
+        }
         if (result != SQLITE_OK)
             throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
 

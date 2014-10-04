@@ -21,6 +21,7 @@
 #include <string>
 #include <cstdio>
 #include <cerrno>
+#include <thread>
 using namespace std;
 using namespace locust;
 using namespace Catch;
@@ -90,5 +91,44 @@ TEST_CASE("Test database SQLite implementation","[database]") {
         
         REQUIRE_FALSE(resultRow->next());
         REQUIRE(resultRow->done());
+    }
+    
+    SECTION("Test concurrent database access") {
+        SQLiteDatabase db2;
+        REQUIRE_NOTHROW(db2.initialize(dbFileName));
+        
+        shared_ptr<ResultRow> resultRow;
+        REQUIRE_NOTHROW(resultRow = db.executeStatement("CREATE TABLE Atomic (val INTEGER)"));
+        REQUIRE(resultRow->done());
+        REQUIRE_NOTHROW(resultRow = db.executeStatement("INSERT INTO Atomic VALUES(?)",{0}));
+        REQUIRE(resultRow->done());
+        
+        thread thread1([&resultRow, &db]{
+            for (int i = 0; i < 50; ++i) {
+                resultRow = db.executeStatement("BEGIN IMMEDIATE TRANSACTION");
+                resultRow = db.executeStatement("SELECT * FROM Atomic");
+                int value = (*resultRow)[0].asInt();
+                resultRow = db.executeStatement("UPDATE Atomic SET val = ?", {++value});
+                resultRow = db.executeStatement("END TRANSACTION");
+            }
+        });
+        thread thread2([&db2]{
+            shared_ptr<ResultRow> resultRow2;
+            for (int i = 0; i < 50; ++i) {
+                resultRow2 = db2.executeStatement("BEGIN IMMEDIATE TRANSACTION");
+                resultRow2 = db2.executeStatement("SELECT * FROM Atomic");
+                int value = (*resultRow2)[0].asInt();
+                resultRow2 = db2.executeStatement("UPDATE Atomic SET val = ?", {++value});
+                resultRow2 = db2.executeStatement("END TRANSACTION");
+            }
+        });
+        
+        thread1.join();
+        thread2.join();
+        
+        REQUIRE_NOTHROW(resultRow = db.executeStatement("SELECT * FROM Atomic"));
+        REQUIRE(resultRow->values().size() == 1);
+        int value = (*resultRow)[0].asInt();
+        REQUIRE(value == 100);
     }
 }

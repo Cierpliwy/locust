@@ -28,23 +28,36 @@ SQLiteResultRow::SQLiteResultRow(sqlite3_stmt *statement) : _statement(statement
     next();
 }
 
+SQLiteResultRow::~SQLiteResultRow() {
+    cleanup();
+}
+
+void SQLiteResultRow::cleanup() {
+    if (_statement) {
+        _rowValues.clear();
+        int result = SQLITE_BUSY;
+        while (result == SQLITE_BUSY || result == SQLITE_LOCKED) {
+            result = sqlite3_reset(_statement);
+        }
+        if (result != SQLITE_OK)
+            throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
+        _statement = nullptr;
+    }
+}
+
 bool SQLiteResultRow::next() {
     if (!_statement) return false;
 
-    int result;
-    do {
+    int result = SQLITE_BUSY;
+    while (result == SQLITE_BUSY || result == SQLITE_LOCKED) {
         result = sqlite3_step(_statement);
-    } while (result == SQLITE_BUSY);
+    }
     if (result == SQLITE_DONE) {
-        _rowValues.clear();
-        sqlite3_reset(_statement);
-        _statement = nullptr;
+        cleanup();
         return false;
     }
     if (result != SQLITE_ROW) {
-        _rowValues.clear();
-        sqlite3_reset(_statement);
-        _statement = nullptr;
+        cleanup();
         throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
     }
     
