@@ -17,27 +17,30 @@
  *
  */
 
-#ifndef LOCUST_DATABASE_HPP
-#define LOCUST_DATABASE_HPP
-#include "Locust/Database/Value.hpp"
-#include "Locust/Database/ResultRow.hpp"
-#include <string>
+#ifndef LOCUST_FILE_MANAGER_HPP
+#define LOCUST_FILE_MANAGER_HPP
+#include "ObjectManager.hpp"
+#include "../Database/Database.hpp"
 #include <memory>
+#include <vector>
 
 namespace locust {
+class File;
 
-class Database {
+class FileManager : public ObjectManager {
 public:
-    Database();
-    virtual ~Database();
-
-    virtual void initialize(const std::string &databaseFileName) = 0;
-    virtual void close() = 0;
-
-    virtual std::shared_ptr<ResultRow> executeStatement(const std::string &statement, const Values &params = Values()) = 0;
-    virtual unsigned long lastRowID() = 0;
+    virtual ~FileManager();
+    
+    static std::shared_ptr<FileManager> getInstance(std::shared_ptr<Database> database);
+    std::shared_ptr<File> createFile(const std::string &name = "");
+    
+protected:
+    FileManager(std::shared_ptr<Database> database);
+    std::vector<std::shared_ptr<File>> _files;
+    std::shared_ptr<Database> _database;
 };
 
 }
 
-#endif // LOCUST_DATABASE_HPP
+#endif // LOCUST_FILE_MANAGER_HPP
+

@@ -37,14 +37,18 @@ public:
     virtual void close();
 
     virtual std::shared_ptr<ResultRow> executeStatement(const std::string &statement, const Values &params = Values());
-
+    virtual unsigned long lastRowID();
+    
 private:
     sqlite3_stmt* findOrCreateStatement(const std::string &statement);
     void fillStatementParameters(sqlite3_stmt* statement, const Values &params);
     std::shared_ptr<ResultRow> executeStatement(sqlite3_stmt *statement);
+    
+    void prepareTables();
 
     sqlite3 *_db;
     std::unordered_map<std::string, sqlite3_stmt*> _preparedStatements;
+    sqlite3_stmt *_lastPreparedStatement;
 };
 
 }

@@ -17,27 +17,21 @@
  *
  */
 
-#ifndef LOCUST_DATABASE_HPP
-#define LOCUST_DATABASE_HPP
-#include "Locust/Database/Value.hpp"
-#include "Locust/Database/ResultRow.hpp"
-#include <string>
-#include <memory>
+#ifndef LOCUST_OBJECT_HPP
+#define LOCUST_OBJECT_HPP
+#include "../Interfaces/Threadsafe.hpp"
+#include "../Interfaces/MemoryManaged.hpp"
 
 namespace locust {
 
-class Database {
+class Object : public Threadsafe, public MemoryManaged {
 public:
-    Database();
-    virtual ~Database();
-
-    virtual void initialize(const std::string &databaseFileName) = 0;
-    virtual void close() = 0;
-
-    virtual std::shared_ptr<ResultRow> executeStatement(const std::string &statement, const Values &params = Values()) = 0;
-    virtual unsigned long lastRowID() = 0;
+    virtual void save() = 0;
+    
+protected:
+    Object();
 };
 
 }
 
-#endif // LOCUST_DATABASE_HPP
+#endif // LOCUST_OBJECT_HPP

@@ -35,12 +35,6 @@ SQLiteResultRow::~SQLiteResultRow() {
 void SQLiteResultRow::cleanup() {
     if (_statement) {
         _rowValues.clear();
-        int result = SQLITE_BUSY;
-        while (result == SQLITE_BUSY || result == SQLITE_LOCKED) {
-            result = sqlite3_reset(_statement);
-        }
-        if (result != SQLITE_OK)
-            throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
         _statement = nullptr;
     }
 }
@@ -73,7 +67,7 @@ bool SQLiteResultRow::next() {
         int type = sqlite3_column_type(_statement, i);
         switch(type) {
             case SQLITE_INTEGER:
-                _rowValues[static_cast<size_t>(i)] = sqlite3_column_int(_statement, i);
+                _rowValues[static_cast<size_t>(i)] = static_cast<long>(sqlite3_column_int64(_statement, i));
                 break;
             case SQLITE_FLOAT:
                 _rowValues[static_cast<size_t>(i)] = sqlite3_column_double(_statement, i);

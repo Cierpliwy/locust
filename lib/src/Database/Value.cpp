@@ -42,8 +42,8 @@ void Value::copy(const Value &value) {
     clean();
     _type = value._type;
     switch(_type) {
-        case Type::Integer:
-            _value.intValue = value._value.intValue;
+        case Type::Long:
+            _value.longValue = value._value.longValue;
             break;
         case Type::Double:
             _value.doubleValue = value._value.doubleValue;
@@ -65,8 +65,13 @@ Value::Value(const Value &value) {
 }
 
 Value::Value(int intValue) {
-    _type = Type::Integer;
-    _value.intValue = intValue;
+    _type = Type::Long;
+    _value.longValue = intValue;
+}
+
+Value::Value(long longValue) {
+    _type = Type::Long;
+    _value.longValue = longValue;
 }
 
 Value::Value(double doubleValue) {
@@ -105,6 +110,11 @@ Value &Value::operator=(int intValue) {
     return *this;
 }
 
+Value &Value::operator=(long longValue) {
+    *this = Value(longValue);
+    return *this;
+}
+
 Value &Value::operator=(double doubleValue) {
     *this = Value(doubleValue);
     return *this;
@@ -129,10 +139,10 @@ Value::Type Value::type() const {
     return _type;
 }
 
-int Value::asInt() const {
-    if (_type != Type::Integer)
+long Value::asLong() const {
+    if (_type != Type::Long)
         throw InvalidValueException(THIS_LOCATION);
-    return _value.intValue;
+    return _value.longValue;
 }
 
 double Value::asDouble() const {

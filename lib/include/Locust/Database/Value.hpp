@@ -27,7 +27,7 @@ namespace locust {
 class Value {
 public:
     enum class Type {
-        Integer,
+        Long,
         Double,
         String,
         Blob,
@@ -39,12 +39,14 @@ public:
     ~Value();
 
     Value(int intValue);
+    Value(long longValue);
     Value(double doubleValue);
     Value(const char *stringValue);
     Value(const std::string &stringValue);
     Value(const std::vector<char> &blobValue);
     Value& operator=(const Value& value);
     Value& operator=(int intValue);
+    Value& operator=(long longValue);
     Value& operator=(double doubleValue);
     Value& operator=(const char *stringValue);
     Value& operator=(const std::string &stringValue);
@@ -52,7 +54,7 @@ public:
 
     Type type() const;
 
-    int asInt() const;
+    long asLong() const;
     double asDouble() const;
     const std::string& asString() const;
     const std::vector<char>& asBlob() const;
@@ -66,7 +68,7 @@ private:
         ValueImpl(){}
         ~ValueImpl(){}
 
-        int intValue;
+        long longValue;
         double doubleValue;
         std::string stringValue;
         std::vector<char> blobValue;

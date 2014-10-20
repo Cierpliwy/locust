@@ -17,27 +17,17 @@
  *
  */
 
-#ifndef LOCUST_DATABASE_HPP
-#define LOCUST_DATABASE_HPP
-#include "Locust/Database/Value.hpp"
-#include "Locust/Database/ResultRow.hpp"
-#include <string>
-#include <memory>
+#include "Locust/Managers/ObjectManager.hpp"
+using namespace locust;
+using namespace std;
 
-namespace locust {
-
-class Database {
-public:
-    Database();
-    virtual ~Database();
-
-    virtual void initialize(const std::string &databaseFileName) = 0;
-    virtual void close() = 0;
-
-    virtual std::shared_ptr<ResultRow> executeStatement(const std::string &statement, const Values &params = Values()) = 0;
-    virtual unsigned long lastRowID() = 0;
-};
-
+void ObjectManager::registerObjectManager(ObjectManager *manager) {
+    lock_guard lock(_registrationMutex);
+    _objects.insert(manager);
 }
 
-#endif // LOCUST_DATABASE_HPP
+void ObjectManager::unregisterObjectManager(ObjectManager *manager) {
+    lock_guard lock(_registrationMutex);
+    _objects.erase(manager);
+}
+

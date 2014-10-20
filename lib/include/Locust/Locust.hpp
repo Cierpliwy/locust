@@ -32,4 +32,13 @@
 #include "Locust/Database/SQLite/SQLiteDatabase.hpp"
 #include "Locust/Database/Value.hpp"
 
+#include "Locust/Interfaces/Threadsafe.hpp"
+#include "Locust/Interfaces/MemoryManaged.hpp"
+
+#include "Locust/Objects/Object.hpp"
+#include "Locust/Objects/File.hpp"
+
+#include "Locust/Managers/ObjectManager.hpp"
+#include "Locust/Managers/FileManager.hpp"
+
 #endif // LOCUST_HPP

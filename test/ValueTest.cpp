@@ -29,7 +29,7 @@ TEST_CASE("Check all available types", "[values]") {
     
     SECTION("Testing Null value") {
         REQUIRE(val.type() == Value::Type::Null);
-        REQUIRE_THROWS_AS(val.asInt(), InvalidValueException);
+        REQUIRE_THROWS_AS(val.asLong(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asDouble(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asString(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asBlob(), InvalidValueException);
@@ -37,8 +37,8 @@ TEST_CASE("Check all available types", "[values]") {
     
     SECTION("Testing Int value") {
         val = 30;
-        REQUIRE(val.type() == Value::Type::Integer);
-        REQUIRE(val.asInt() == 30);
+        REQUIRE(val.type() == Value::Type::Long);
+        REQUIRE(val.asLong() == 30);
         REQUIRE_THROWS_AS(val.asDouble(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asString(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asBlob(), InvalidValueException);
@@ -47,7 +47,7 @@ TEST_CASE("Check all available types", "[values]") {
     SECTION("Testing Double value") {
         val = 1.25;
         REQUIRE(val.type() == Value::Type::Double);
-        REQUIRE_THROWS_AS(val.asInt(), InvalidValueException);
+        REQUIRE_THROWS_AS(val.asLong(), InvalidValueException);
         REQUIRE(val.asDouble() == 1.25);
         REQUIRE_THROWS_AS(val.asString(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asBlob(), InvalidValueException);
@@ -56,7 +56,7 @@ TEST_CASE("Check all available types", "[values]") {
     SECTION("Testing String value") {
         val = "Ala ma kota";
         REQUIRE(val.type() == Value::Type::String);
-        REQUIRE_THROWS_AS(val.asInt(), InvalidValueException);
+        REQUIRE_THROWS_AS(val.asLong(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asDouble(), InvalidValueException);
         REQUIRE(val.asString() == "Ala ma kota");
         REQUIRE_THROWS_AS(val.asBlob(), InvalidValueException);
@@ -65,7 +65,7 @@ TEST_CASE("Check all available types", "[values]") {
         val = str;
         
         REQUIRE(val.type() == Value::Type::String);
-        REQUIRE_THROWS_AS(val.asInt(), InvalidValueException);
+        REQUIRE_THROWS_AS(val.asLong(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asDouble(), InvalidValueException);
         REQUIRE(val.asString() == "Ala ma kota2");
         REQUIRE_THROWS_AS(val.asBlob(), InvalidValueException);
@@ -75,7 +75,7 @@ TEST_CASE("Check all available types", "[values]") {
         vector<char> vec = {'A','B','C','D'}; 
         val = vec; 
         REQUIRE(val.type() == Value::Type::Blob);
-        REQUIRE_THROWS_AS(val.asInt(), InvalidValueException);
+        REQUIRE_THROWS_AS(val.asLong(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asDouble(), InvalidValueException);
         REQUIRE_THROWS_AS(val.asString(), InvalidValueException);
         REQUIRE(val.asBlob()[0] == 'A');
@@ -89,9 +89,9 @@ TEST_CASE("Check all available types", "[values]") {
         REQUIRE(valNull.type() == Value::Type::Null);
         
         val = 12;
-        Value valInt(val);
-        REQUIRE(valInt.type() == Value::Type::Integer);
-        REQUIRE(valInt.asInt() == 12);
+        Value valLong(val);
+        REQUIRE(valLong.type() == Value::Type::Long);
+        REQUIRE(valLong.asLong() == 12);
         
         val = 3.14;
         Value valDouble(val);

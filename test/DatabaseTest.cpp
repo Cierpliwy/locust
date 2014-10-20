@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cerrno>
 #include <thread>
+#include <climits>
 using namespace std;
 using namespace locust;
 using namespace Catch;
@@ -53,17 +54,20 @@ TEST_CASE("Test database SQLite implementation","[database]") {
         
         // Insert values
         vector<char> data = {'a','b','c'};
-        REQUIRE_NOTHROW(resultRow = db.executeStatement("INSERT INTO Test VALUES(?,?,?,?)", {32, 0.3, "Olek", data}));
+        REQUIRE_NOTHROW(resultRow = db.executeStatement("INSERT INTO Test VALUES(?,?,?,?)", {32l, 0.3, "Olek", data}));
         REQUIRE(resultRow->done());
+        unsigned long rowID1 = db.lastRowID();
         REQUIRE_NOTHROW(resultRow = db.executeStatement("INSERT INTO Test VALUES(?,?,?,?)", {nullptr, 0.4, "Olek2", vector<char>()}));
         REQUIRE(resultRow->done());
+        unsigned long rowID2 = db.lastRowID();
+        REQUIRE(rowID1 != rowID2);
         
         // Check values
         REQUIRE_NOTHROW(resultRow = db.executeStatement("SELECT * FROM Test"));
         REQUIRE(resultRow->values().size() == 4);
         
         Value val = (*resultRow)[0];
-        REQUIRE_NOTHROW(val.asInt() == 32); 
+        REQUIRE_NOTHROW(val.asLong() == 32); 
         val = (*resultRow)[1];
         REQUIRE_NOTHROW(val.asDouble() == 0.3);
         val = (*resultRow)[2];
@@ -107,7 +111,7 @@ TEST_CASE("Test database SQLite implementation","[database]") {
             for (int i = 0; i < 50; ++i) {
                 resultRow = db.executeStatement("BEGIN IMMEDIATE TRANSACTION");
                 resultRow = db.executeStatement("SELECT * FROM Atomic");
-                int value = (*resultRow)[0].asInt();
+                long value = (*resultRow)[0].asLong();
                 resultRow = db.executeStatement("UPDATE Atomic SET val = ?", {++value});
                 resultRow = db.executeStatement("END TRANSACTION");
             }
@@ -117,7 +121,7 @@ TEST_CASE("Test database SQLite implementation","[database]") {
             for (int i = 0; i < 50; ++i) {
                 resultRow2 = db2.executeStatement("BEGIN IMMEDIATE TRANSACTION");
                 resultRow2 = db2.executeStatement("SELECT * FROM Atomic");
-                int value = (*resultRow2)[0].asInt();
+                long value = (*resultRow2)[0].asLong();
                 resultRow2 = db2.executeStatement("UPDATE Atomic SET val = ?", {++value});
                 resultRow2 = db2.executeStatement("END TRANSACTION");
             }
@@ -128,7 +132,16 @@ TEST_CASE("Test database SQLite implementation","[database]") {
         
         REQUIRE_NOTHROW(resultRow = db.executeStatement("SELECT * FROM Atomic"));
         REQUIRE(resultRow->values().size() == 1);
-        int value = (*resultRow)[0].asInt();
+        long value = (*resultRow)[0].asLong();
+        resultRow->next();
         REQUIRE(value == 100);
+        
+        resultRow = db2.executeStatement("UPDATE Atomic SET val = ?", {LONG_MAX});
+        resultRow = db2.executeStatement("SELECT * FROM Atomic");
+        REQUIRE((*resultRow)[0].asLong() == LONG_MAX);
+        
+        resultRow = db2.executeStatement("UPDATE Atomic SET val = ?", {LONG_MIN});
+        resultRow = db2.executeStatement("SELECT * FROM Atomic");
+        REQUIRE((*resultRow)[0].asLong() == LONG_MIN);
     }
 }

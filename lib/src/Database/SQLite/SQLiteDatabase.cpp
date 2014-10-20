@@ -28,6 +28,7 @@ using namespace std;
 
 SQLiteDatabase::SQLiteDatabase() {
     _db = nullptr;
+    _lastPreparedStatement = nullptr;
 }
 
 SQLiteDatabase::~SQLiteDatabase() {
@@ -48,6 +49,8 @@ void SQLiteDatabase::initialize(const std::string &databaseFileName) {
         close();
         throw DatabaseOpenException(THIS_LOCATION, reason);
     }
+    
+    prepareTables();
 }
 
 void SQLiteDatabase::close() {
@@ -72,6 +75,13 @@ shared_ptr<ResultRow> SQLiteDatabase::executeStatement(const std::string &statem
 
 // PRIVATE INTERFACE --------------------------------------------------------------------------------------------------
 sqlite3_stmt *SQLiteDatabase::findOrCreateStatement(const std::string &statement) {
+    
+    if (_lastPreparedStatement) {
+        int result = sqlite3_reset(_lastPreparedStatement);
+        if (result != SQLITE_OK)
+            throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
+    }
+    
     sqlite3_stmt *sqliteStatement = nullptr;
     auto preparedStatement = _preparedStatements.find(statement);
     if (preparedStatement == _preparedStatements.end()) {
@@ -90,6 +100,7 @@ sqlite3_stmt *SQLiteDatabase::findOrCreateStatement(const std::string &statement
         sqliteStatement = preparedStatement->second;
     }
 
+    _lastPreparedStatement = sqliteStatement;
     return sqliteStatement;
 }
 
@@ -102,8 +113,8 @@ void SQLiteDatabase::fillStatementParameters(sqlite3_stmt *statement, const Valu
         index++;
         int result;
         switch(param.type()) {
-            case Value::Type::Integer:
-                result = sqlite3_bind_int(statement, index, param.asInt());
+            case Value::Type::Long:
+                result = sqlite3_bind_int64(statement, index, param.asLong());
                 break;
             case Value::Type::Double:
                 result = sqlite3_bind_double(statement, index, param.asDouble());
@@ -132,6 +143,22 @@ void SQLiteDatabase::fillStatementParameters(sqlite3_stmt *statement, const Valu
 shared_ptr<ResultRow> SQLiteDatabase::executeStatement(sqlite3_stmt *statement) {
     shared_ptr<ResultRow> resultRow(new SQLiteResultRow(statement));
     return resultRow;
+}
+
+unsigned long SQLiteDatabase::lastRowID() {
+    return static_cast<unsigned long>(sqlite3_last_insert_rowid(_db));
+}
+
+void SQLiteDatabase::prepareTables() {
+    executeStatement("CREATE TABLE IF NOT EXISTS File (id INTEGER PRIMARY KEY,"
+                                                      "category_id INTEGER NOT NULL,"
+                                                      "name STRING NOT NULL,"
+                                                      "date STRING NOT NULL,"
+                                                      "content BLOB NOT NULL)");
+    executeStatement("CREATE TABLE IF NOT EXISTS Category (id INTEGER PRIMARY KEY,"
+                                                          "root_id INTEGER NOT NULL,"
+                                                          "name STRING NOT NULL,"
+                                                          "keywords STRING NOT NULL)");
 }
 
 
