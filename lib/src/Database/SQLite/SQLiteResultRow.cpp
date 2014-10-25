@@ -23,8 +23,8 @@
 #include <vector>
 using namespace locust;
 using namespace std;
-SQLiteResultRow::SQLiteResultRow() : _statement(nullptr) {}
-SQLiteResultRow::SQLiteResultRow(sqlite3_stmt *statement) : _statement(statement) {
+SQLiteResultRow::SQLiteResultRow() : _statement(nullptr), _lastSQLiteCode(SQLITE_OK) {}
+SQLiteResultRow::SQLiteResultRow(shared_ptr<sqlite3_stmt> statement) : _statement(statement) {
     next();
 }
 
@@ -34,6 +34,14 @@ SQLiteResultRow::~SQLiteResultRow() {
 
 void SQLiteResultRow::cleanup() {
     if (_statement) {
+        while (_lastSQLiteCode == SQLITE_ROW || _lastSQLiteCode == SQLITE_BUSY || _lastSQLiteCode == SQLITE_LOCKED) {
+            _lastSQLiteCode = sqlite3_step(_statement.get());
+        }
+        
+        _lastSQLiteCode = sqlite3_reset(_statement.get());
+        if (_lastSQLiteCode != SQLITE_OK) 
+            throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(_lastSQLiteCode));
+      
         _rowValues.clear();
         _statement = nullptr;
     }
@@ -42,20 +50,20 @@ void SQLiteResultRow::cleanup() {
 bool SQLiteResultRow::next() {
     if (!_statement) return false;
 
-    int result = SQLITE_BUSY;
-    while (result == SQLITE_BUSY || result == SQLITE_LOCKED) {
-        result = sqlite3_step(_statement);
+    _lastSQLiteCode = SQLITE_BUSY;
+    while (_lastSQLiteCode == SQLITE_BUSY || _lastSQLiteCode == SQLITE_LOCKED) {
+        _lastSQLiteCode = sqlite3_step(_statement.get());
     }
-    if (result == SQLITE_DONE) {
+    if (_lastSQLiteCode == SQLITE_DONE) {
         cleanup();
         return false;
     }
-    if (result != SQLITE_ROW) {
+    if (_lastSQLiteCode != SQLITE_ROW) {
         cleanup();
-        throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
+        throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(_lastSQLiteCode));
     }
     
-    int columnCount = sqlite3_column_count(_statement);
+    int columnCount = sqlite3_column_count(_statement.get());
     if (columnCount <= 0) {
         _rowValues.clear();
         return true;
@@ -64,20 +72,20 @@ bool SQLiteResultRow::next() {
     _rowValues.resize(static_cast<size_t>(columnCount));
 
     for(int i = 0; i < columnCount; ++i) {
-        int type = sqlite3_column_type(_statement, i);
+        int type = sqlite3_column_type(_statement.get(), i);
         switch(type) {
             case SQLITE_INTEGER:
-                _rowValues[static_cast<size_t>(i)] = static_cast<long>(sqlite3_column_int64(_statement, i));
+                _rowValues[static_cast<size_t>(i)] = static_cast<long>(sqlite3_column_int64(_statement.get(), i));
                 break;
             case SQLITE_FLOAT:
-                _rowValues[static_cast<size_t>(i)] = sqlite3_column_double(_statement, i);
+                _rowValues[static_cast<size_t>(i)] = sqlite3_column_double(_statement.get(), i);
                 break;
             case SQLITE_TEXT:
-                _rowValues[static_cast<size_t>(i)] = reinterpret_cast<const char*>(sqlite3_column_text(_statement, i));
+                _rowValues[static_cast<size_t>(i)] = reinterpret_cast<const char*>(sqlite3_column_text(_statement.get(), i));
                 break;
             case SQLITE_BLOB: {
-                const char *data = reinterpret_cast<const char*>(sqlite3_column_blob(_statement, i));
-                int bytesNum = sqlite3_column_bytes(_statement, i);
+                const char *data = reinterpret_cast<const char*>(sqlite3_column_blob(_statement.get(), i));
+                int bytesNum = sqlite3_column_bytes(_statement.get(), i);
                 _rowValues[static_cast<size_t>(i)] = vector<char>(data, data + bytesNum);
                 break;
             }

@@ -23,12 +23,12 @@
 #include "Locust/Exceptions/Database/DatabaseNotInitializedException.hpp"
 #include "Locust/Exceptions/Database/DatabaseStatementException.hpp"
 #include <sqlite3.h>
+#include <memory>
 using namespace locust;
 using namespace std;
 
 SQLiteDatabase::SQLiteDatabase() {
     _db = nullptr;
-    _lastPreparedStatement = nullptr;
 }
 
 SQLiteDatabase::~SQLiteDatabase() {
@@ -56,9 +56,8 @@ void SQLiteDatabase::initialize(const std::string &databaseFileName) {
 void SQLiteDatabase::close() {
     if (_db) {
         for(auto& statement : _preparedStatements) {
-            sqlite3_finalize(statement.second);
+            sqlite3_finalize(statement.second.get());
         }
-
         _preparedStatements.clear();
         sqlite3_close(_db);
         _db = nullptr;
@@ -68,24 +67,18 @@ void SQLiteDatabase::close() {
 shared_ptr<ResultRow> SQLiteDatabase::executeStatement(const std::string &statement, const Values &params) {
     if (!_db) throw DatabaseNotInitializedException(THIS_LOCATION);
 
-    sqlite3_stmt *sqliteStatement = findOrCreateStatement(statement);
+    auto sqliteStatement = findOrCreateStatement(statement);
     fillStatementParameters(sqliteStatement, params);
     return executeStatement(sqliteStatement);
 }
 
 // PRIVATE INTERFACE --------------------------------------------------------------------------------------------------
-sqlite3_stmt *SQLiteDatabase::findOrCreateStatement(const std::string &statement) {
-    
-    if (_lastPreparedStatement) {
-        int result = sqlite3_reset(_lastPreparedStatement);
-        if (result != SQLITE_OK)
-            throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
-    }
-    
-    sqlite3_stmt *sqliteStatement = nullptr;
+shared_ptr<sqlite3_stmt> SQLiteDatabase::findOrCreateStatement(const std::string &statement) {
     auto preparedStatement = _preparedStatements.find(statement);
     if (preparedStatement == _preparedStatements.end()) {
         int result = SQLITE_BUSY;
+        sqlite3_stmt *sqliteStatement = nullptr;
+        
         while (result == SQLITE_BUSY || result == SQLITE_LOCKED) {
             result = sqlite3_prepare_v2(_db, statement.c_str(),
                                         static_cast<int>(statement.length() + 1),
@@ -94,18 +87,23 @@ sqlite3_stmt *SQLiteDatabase::findOrCreateStatement(const std::string &statement
         if (result != SQLITE_OK)
             throw DatabaseStatementException(THIS_LOCATION, sqlite3_errstr(result));
 
-        if (_preparedStatements.insert(make_pair(statement, sqliteStatement)).second != true)
+        shared_ptr<sqlite3_stmt> sqliteStatementSharedPtr(sqliteStatement, [](sqlite3_stmt*){});
+        if (_preparedStatements.insert(make_pair(statement, sqliteStatementSharedPtr)).second != true) {
+            sqlite3_finalize(sqliteStatement);
             throw DatabaseStatementException(THIS_LOCATION);
+        }
+        
+        return sqliteStatementSharedPtr;
     } else {
-        sqliteStatement = preparedStatement->second;
+        if (!preparedStatement->second.unique())
+            throw DatabaseStatementException(THIS_LOCATION);
+    
+        return preparedStatement->second;
     }
-
-    _lastPreparedStatement = sqliteStatement;
-    return sqliteStatement;
 }
 
-void SQLiteDatabase::fillStatementParameters(sqlite3_stmt *statement, const Values &params) {
-    sqlite3_clear_bindings(statement);
+void SQLiteDatabase::fillStatementParameters(shared_ptr<sqlite3_stmt> statement, const Values &params) {
+    sqlite3_clear_bindings(statement.get());
     if (params.size() <= 0) return;
 
     int index = 0;
@@ -114,24 +112,24 @@ void SQLiteDatabase::fillStatementParameters(sqlite3_stmt *statement, const Valu
         int result;
         switch(param.type()) {
             case Value::Type::Long:
-                result = sqlite3_bind_int64(statement, index, param.asLong());
+                result = sqlite3_bind_int64(statement.get(), index, param.asLong());
                 break;
             case Value::Type::Double:
-                result = sqlite3_bind_double(statement, index, param.asDouble());
+                result = sqlite3_bind_double(statement.get(), index, param.asDouble());
                 break;
             case Value::Type::String:
-                result = sqlite3_bind_text(statement, index, param.asString().c_str(), -1, SQLITE_STATIC);
+                result = sqlite3_bind_text(statement.get(), index, param.asString().c_str(), -1, SQLITE_STATIC);
                 break;
             case Value::Type::Blob:
                 if (param.asBlob().empty()) {
-                    result = sqlite3_bind_zeroblob(statement, index, 0);
+                    result = sqlite3_bind_zeroblob(statement.get(), index, 0);
                 } else {
-                    result = sqlite3_bind_blob(statement, index, param.asBlob().data(),
+                    result = sqlite3_bind_blob(statement.get(), index, param.asBlob().data(),
                                                static_cast<int>(param.asBlob().size()), SQLITE_STATIC);
                 }
                 break;
             case Value::Type::Null:
-                result = sqlite3_bind_null(statement, index);
+                result = sqlite3_bind_null(statement.get(), index);
                 break;
         }
         if (result != SQLITE_OK) {
@@ -140,7 +138,7 @@ void SQLiteDatabase::fillStatementParameters(sqlite3_stmt *statement, const Valu
     }
 }
 
-shared_ptr<ResultRow> SQLiteDatabase::executeStatement(sqlite3_stmt *statement) {
+shared_ptr<ResultRow> SQLiteDatabase::executeStatement(shared_ptr<sqlite3_stmt> statement) {
     shared_ptr<ResultRow> resultRow(new SQLiteResultRow(statement));
     return resultRow;
 }

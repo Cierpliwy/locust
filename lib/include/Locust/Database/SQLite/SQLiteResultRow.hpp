@@ -21,6 +21,7 @@
 #define LOCUST_SQLITE_RESULT_ROW_HPP
 #include "Locust/Database/Database.hpp"
 #include "Locust/Database/ResultRow.hpp"
+#include <memory>
 struct sqlite3_stmt;
 
 namespace locust {
@@ -37,11 +38,12 @@ public:
 
 protected:
     SQLiteResultRow();
-    SQLiteResultRow(sqlite3_stmt *statement);
+    SQLiteResultRow(std::shared_ptr<sqlite3_stmt> statement);
     void cleanup();
 
-    sqlite3_stmt *_statement;
+    std::shared_ptr<sqlite3_stmt> _statement;
     Values _rowValues;
+    int _lastSQLiteCode;
 };
 
 }
