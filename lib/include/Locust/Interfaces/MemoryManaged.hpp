@@ -26,16 +26,18 @@ namespace locust {
 class MemoryManaged {
 public:
     MemoryManaged() : _isCleaned(true) {}
-    virtual ~MemoryManaged();
+    virtual ~MemoryManaged() {}
     
-    virtual void fetch() = 0;
+    virtual void fetch() const = 0;
+    virtual void save() = 0;
     
     virtual void cleanUnused(bool recursive = false) = 0;
     virtual void cleanAll(bool recursive = false) = 0;
     
     virtual unsigned long allocatedMemory() const = 0;
+    
 protected:
-    bool _isCleaned;
+    mutable bool _isCleaned;
 };
     
 }

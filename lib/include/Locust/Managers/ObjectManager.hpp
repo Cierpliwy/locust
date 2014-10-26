@@ -35,6 +35,8 @@ protected:
     
     static void registerObjectManager(ObjectManager *manager);
     static void unregisterObjectManager(ObjectManager *manager);
+    
+private:
     static std::unordered_set<ObjectManager*> _objects;
     static std::mutex _registrationMutex;
 };

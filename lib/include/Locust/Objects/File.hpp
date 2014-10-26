@@ -36,17 +36,18 @@ public:
     std::string date() const;
     std::string content() const;
     
-    void setID(unsigned int ID) const;
-    void setCategoryID(unsigned int categoryID) const;
-    void setName(const std::string &name) const;
-    void setDate(const std::string &date) const;
-    void setContent(const std::string& content) const;
-    
+    virtual void fetch() const;
     virtual void save();
-    virtual void fetch(); 
-    virtual long unsigned int allocatedMemory() const;
-    virtual void cleanAll(bool recursive = false);
+    
     virtual void cleanUnused(bool recursive = false);
+    virtual void cleanAll(bool recursive = false);
+    virtual long unsigned int allocatedMemory() const;
+    
+    void setID(unsigned int ID);
+    void setCategoryID(unsigned int categoryID);
+    void setName(const std::string &name);
+    void setDate(const std::string &date);
+    void setContent(const std::string& content);
     
 protected:
     File(FileManager &manager) : _manager(manager) {}

@@ -18,8 +18,8 @@
  */
 
 #include "Locust/Managers/FileManager.hpp"
+#include "Locust/Objects/File.hpp"
 #include "Locust/Exceptions/Database/DatabaseNotInitializedException.hpp"
-#include <chrono>
 using namespace std;
 using namespace locust;
 
@@ -35,14 +35,41 @@ FileManager::~FileManager() {
 }
 
 shared_ptr<FileManager> FileManager::getInstance(shared_ptr<Database> database) {
-    return shared_ptr(new FileManager(database));
+    return shared_ptr<FileManager>(new FileManager(database));
 }
 
 shared_ptr<File> FileManager::createFile(const string &name) {
     //TODO: Category id
-    lock_guard lock(_mutex);
-    auto currentTime = chrono::system_clock::now();
-    time_t t;
+    lock_guard<mutex> lock(_mutex);
+    time_t currentTime;
+    time(&currentTime);
     
-    _database->executeStatement("INSERT INTO File VALUES(?,?,?,?,?)", {nullptr, 0, name, currentTime.to_time_t(),});
+    shared_ptr<File> file(new File(*this));
+    _files.push_back(file);
+    
+    _database->executeStatement("INSERT INTO File VALUES(?,?,?,?,?)", {nullptr, 0, name, "time",vector<char>()});
+    
+    return file;
+}
+
+void FileManager::fetch() const {
+    if (_isCleaned) {
+        
+    }
+}
+
+void FileManager::save() {
+    
+}
+
+void FileManager::cleanUnused(bool) {
+
+}
+
+void FileManager::cleanAll(bool) {
+
+}
+
+long unsigned int FileManager::allocatedMemory() const {
+    return 0;
 }

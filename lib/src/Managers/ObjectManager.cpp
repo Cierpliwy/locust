@@ -21,13 +21,23 @@
 using namespace locust;
 using namespace std;
 
+ObjectManager::ObjectManager(const ObjectManager &) {
+
+}
+
+ObjectManager::ObjectManager() {
+
+}
+
+std::unordered_set<ObjectManager*> ObjectManager::_objects;
+std::mutex ObjectManager::_registrationMutex;
+
 void ObjectManager::registerObjectManager(ObjectManager *manager) {
-    lock_guard lock(_registrationMutex);
+    lock_guard<mutex> lock(_registrationMutex);
     _objects.insert(manager);
 }
 
 void ObjectManager::unregisterObjectManager(ObjectManager *manager) {
-    lock_guard lock(_registrationMutex);
+    lock_guard<mutex> lock(_registrationMutex);
     _objects.erase(manager);
 }
-

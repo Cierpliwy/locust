@@ -34,6 +34,13 @@ public:
     static std::shared_ptr<FileManager> getInstance(std::shared_ptr<Database> database);
     std::shared_ptr<File> createFile(const std::string &name = "");
     
+    virtual void fetch() const;
+    virtual void save();
+    
+    virtual void cleanUnused(bool recursive = false);
+    virtual void cleanAll(bool recursive = false);
+    virtual long unsigned int allocatedMemory() const;
+    
 protected:
     FileManager(std::shared_ptr<Database> database);
     std::vector<std::shared_ptr<File>> _files;

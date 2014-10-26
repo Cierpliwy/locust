@@ -25,7 +25,7 @@ namespace locust {
 
 class Threadsafe {
 protected:
-    std::mutex _mutex;
+    mutable std::mutex _mutex;
 };
     
 }

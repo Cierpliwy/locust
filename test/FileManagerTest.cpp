@@ -16,21 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include "Catch.hpp"
+#include <Locust/Locust.hpp>
+#include <memory>
+using namespace std;
+using namespace locust;
+using namespace Catch;
 
-#ifndef LOCUST_OBJECT_HPP
-#define LOCUST_OBJECT_HPP
-#include "../Interfaces/Threadsafe.hpp"
-#include "../Interfaces/MemoryManaged.hpp"
-
-namespace locust {
-
-class Object : public Threadsafe, public MemoryManaged {
-public:
+TEST_CASE("Test File Manager","[filemanager]") {
+    const std::string dbFileName = ".filemanagertestdb";
     
-protected:
-    Object();
-};
-
+    // Make sure that database is cleaned
+    int result = remove(dbFileName.c_str());
+    REQUIRE((result == 0 || errno == ENOENT));
+    
+    shared_ptr<SQLiteDatabase> db(new SQLiteDatabase);
+    REQUIRE_NOTHROW(db->initialize(dbFileName));
+    
+    shared_ptr<FileManager> fm; 
+    REQUIRE_NOTHROW(fm = FileManager::getInstance(db));
 }
-
-#endif // LOCUST_OBJECT_HPP

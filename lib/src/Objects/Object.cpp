@@ -18,3 +18,8 @@
  */
 
 #include "Locust/Objects/Object.hpp"
+using namespace locust;
+
+Object::Object() {
+
+}

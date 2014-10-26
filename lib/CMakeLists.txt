@@ -7,8 +7,7 @@ find_package(SQLite3 REQUIRED)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${SQLITE3_INCLUDE_DIRS}")
 
-set(CMAKE_CXX_COMPILER clang++)
-add_definitions("-std=c++11 -Weverything -Werror -Wno-c++98-compat -Wno-shadow -Wno-padded -Wno-weak-vtables")
+add_definitions("-std=c++11")
 
 file(GLOB_RECURSE LIBLOCUST_SRCS src/ *.cpp)
 

@@ -22,83 +22,83 @@ using namespace locust;
 using namespace std;
 
 unsigned int File::ID() const {
-    lock_guard lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
     if (_isCleaned) fetch();
     return _ID;
 }
 
 unsigned int File::categoryID() const {
-    lock_guard lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
     if (_isCleaned) fetch();
     return _categoryID;
 }
 
 string File::name() const {
-    lock_guard lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
     if (_isCleaned) fetch();
     return _name;
 }
 
 string File::date() const {
-    lock_guard lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
     if (_isCleaned) fetch();
     return _date;
 }
 
 string File::content() const {
-    lock_guard lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
     if (_isCleaned) fetch();
     return _content;
 }
 
-void File::setID(unsigned int ID) const {
-    lock_guard lock(_mutex);
+void File::setID(unsigned int ID) {
+    lock_guard<mutex> lock(_mutex);
     _ID = ID;
 }
 
-void File::setCategoryID(unsigned int categoryID) const {
-    lock_guard lock(_mutex);
+void File::setCategoryID(unsigned int categoryID) {
+    lock_guard<mutex> lock(_mutex);
     _categoryID = categoryID;
 }
 
-void File::setName(const string &name) const {
-    lock_guard lock(_mutex);
+void File::setName(const string &name) {
+    lock_guard<mutex> lock(_mutex);
     _name = name;
 }
 
-void File::setDate(const string &date) const {
-    lock_guard lock(_mutex);
+void File::setDate(const string &date) {
+    lock_guard<mutex> lock(_mutex);
     _date = date;
 }
 
-void File::setContent(const string &content) const {
-    lock_guard lock(_mutex);
+void File::setContent(const string &content) {
+    lock_guard<mutex> lock(_mutex);
     _content = content; 
 }
 
 void File::save() {
-    lock_guard lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
     //TODO: Save
 }
 
-void File::fetch() {
-    lock_guard lock(_mutex);
+void File::fetch() const {
+    lock_guard<mutex> lock(_mutex);
     //TODO: Fetch
     _isCleaned = false;
 }
 
-void File::cleanUnused(bool recursive) {
+void File::cleanUnused(bool) {
     // Not implemented
 }
 
-void File::cleanAll(bool recursive) {
-    lock_guard lock(_mutex);
+void File::cleanAll(bool) {
+    lock_guard<mutex> lock(_mutex);
     //TODO: Implement 
     _isCleaned = true;
 }
 
 long unsigned int File::allocatedMemory() const {
-    lock_guard lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
     
     unsigned int usedMemory = 0;
     usedMemory += sizeof(*this);
